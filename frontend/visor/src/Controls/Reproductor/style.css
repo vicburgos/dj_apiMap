@@ -1,0 +1,17 @@
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: inner-spin-button;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  background:dodgerblue;
+  border: none;
+  height:15px;
+  width: 15px;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-appearance: none;
+}

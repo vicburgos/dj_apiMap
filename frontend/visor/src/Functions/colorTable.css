@@ -1,0 +1,8 @@
+.tabulator .tabulator-row.tabulator-selected {
+    background-color: rgba(255, 140, 0, 0.5);
+    user-select: none;
+}
+
+.tabulator .tabulator-row.tabulator-selected:hover {
+    background-color: rgba(255, 140, 0, 0.5);
+}

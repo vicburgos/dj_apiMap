@@ -1,0 +1,22 @@
+:root {
+  --char-width: 1ch;
+  --num-chars: 13;
+  --padding: 1ch;
+}
+
+#mouse-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  width: 100%;
+  font-size: 12px;
+  font-family: monospace;
+  white-space: pre;
+  /* width: calc(var(--num-chars) * var(--char-width) + 2 * var(--padding)); */
+  padding-left: var(--padding);
+  padding-right: var(--padding);
+  user-select: none;
+  border-radius: 5px;
+  border: 1.5px solid rgb(118, 118, 118),
+}

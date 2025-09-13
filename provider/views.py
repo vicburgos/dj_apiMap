@@ -6,9 +6,10 @@ import json
 import geojson
 from geojson import Point, Feature, FeatureCollection
 from django.conf import settings
+from dj_apiMap.settings import BASE_DIR
 
 #### Set some global variables
-dir_root          = '/home/vburgos/dataApp'
+dir_root          = os.path.join(settings.BASE_DIR, 'dataApp')
 hoursRun          = 24*7              # Total hours of the simulation
 startHour         = 4                 # Start hour of the simulation
 endHour           = hoursRun - 1      # End hour of the simulation

@@ -1,1 +1,4 @@
 dataApp
+## Ignorar extras de python dentro de los modulos
+__pycache__/
+*.pyc

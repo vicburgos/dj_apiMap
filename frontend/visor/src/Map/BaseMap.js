@@ -20,8 +20,8 @@ async function mapGenerator(context, state) {
     const mapContainer = document.createElement('div');
     mapContainer.id = 'map';
     const layersBackground = [
-        background.white,
         background.black,
+        background.white,
         background.satellite,
         background.openStreet,
     ]
@@ -170,6 +170,10 @@ async function mapGenerator(context, state) {
     //// Manejo de Estados del tipo set
     state.addEventListener('change:domain', async () => {
         await state.loadInstances();
+        setGrid(false);
+        setWind(false);
+        setColorbar(false);
+        setContour(false);
         await setBorder({waitOption:true});
         state.dispatchEvent(new CustomEvent('change:instance'));
     });
@@ -180,10 +184,9 @@ async function mapGenerator(context, state) {
             : null;
         state.dispatchEvent(new CustomEvent('change:variable'));
     });
-
     state.addEventListener('change:variable', async () => {
-        if (state.variable) {
-            await state.setCurrentData();
+        await state.setCurrentData();
+        if (state.variable && state.currentData) {
             document.dispatchEvent(new CustomEvent('table:start'));
             document.dispatchEvent(new CustomEvent('serie:start'));
             setContour();
@@ -211,12 +214,14 @@ async function mapGenerator(context, state) {
     map.render();
     map.once('postrender', async () => {
         await setBorder();
-        await state.setCurrentData();
-        setContour();
-        setColorbar();
-        const {lon, lat} = context.pointSerieDefault;
-        pointSerieTrigger(lon, lat);
-        document.dispatchEvent(new CustomEvent('table:start'));
+        if (state.variable) {
+            await state.setCurrentData();
+            setContour();
+            setColorbar();
+            const {lon, lat} = context.pointSerieDefault;
+            pointSerieTrigger(lon, lat);
+            document.dispatchEvent(new CustomEvent('table:start'));
+        }
     });
     
     return { mapContainer, map, wrapperSelectLayer }

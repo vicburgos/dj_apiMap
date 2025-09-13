@@ -8,19 +8,24 @@ from geojson import Point, Feature, FeatureCollection
 from django.conf import settings
 
 #### Set some global variables
-dir_root          = os.path.join(settings.BASE_DIR, 'dataApp')
+dir_root          = '/home/vburgos/dataApp'
 hoursRun          = 24*7              # Total hours of the simulation
 startHour         = 4                 # Start hour of the simulation
 endHour           = hoursRun - 1      # End hour of the simulation
 optionLocalTime   = True              # Use local time or not
 ref_dt            = 15                # Time step of the data (minutes)
-domains           = ['antucoya', 'codelconorte']  # List of domains available. Usually only one domain is used.
+domains           = ['antucoya', 'codelconorte', 'pelambres']  # List of domains available. Usually only one domain is used.
 filter_variables  = 'species'         # Filter variables that end with this string
 pointSerieDefault = {'lon':-69.666, 'lat':-22.350}
 places = {
     'points': {
         'Minera Antucoya': (-69.865, -22.627),
         'Maria Elena'    : (-69.666, -22.350),
+
+        'Minera Los Pelambres': (-70.490, -31.717),
+        'Salamanca': (-70.965, -31.776),
+        'Cuncumen':  (-70.629, -31.898),
+
     },
 }
 

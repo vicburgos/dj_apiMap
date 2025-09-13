@@ -169,15 +169,17 @@ export function serieGenerator(context, state, map, panelSerie) {
         document.dispatchEvent(new CustomEvent('serie:end'));
     });
 
-    document.addEventListener('serie:clean', () => {
+    document.addEventListener('serie:clean', (event) => {
         while (Chart.series.length > 0) {
             Chart.series[0].remove(false); // false = no redibujar inmediatamente
         }
         Chart.update({
             yAxis: updateStartDateAxis(state.instance, context, '').yAxis,
         });
-        // lonSerie = null;
-        // latSerie = null;
+        if (event?.cleanFull) {
+            lonSerie = null;
+            latSerie = null;
+        }
     });
 }
 

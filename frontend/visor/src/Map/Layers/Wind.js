@@ -32,10 +32,19 @@ function windGenerator(context, state) {
         updateWhileAnimating: true,
     });
 
-    async function setGrid() {
+    async function setGrid(active=true) {
+        if (!active) {
+            features.clear();
+            return;
+        }
         // HARD CODE variables para la grilla de viento
         let varReference = 'mp10_ld_v10';
         const Data = await state.getData(state.domain, state.instance, varReference);
+
+        if (!Data) {
+            console.log('No available data for wind');
+            return;
+        }
 
         const LON = Data.valuesXX
         const LAT = Data.valuesYY
@@ -49,13 +58,21 @@ function windGenerator(context, state) {
     }
 
     let colorWind = 'rgba(255, 255, 255, 1)';
-    async function setWind() {
-        vectorSource.clear();
+    async function setWind(active=true) {
+        if (!active) {
+            vectorSource.clear();
+            return;
+        }
         // HARD CODE variables para la grilla de viento
         let windx = 'mp10_ld_u10';
         let windy = 'mp10_ld_v10';
         const windxData = await state.getData(state.domain, state.instance, windx);
         const windyData = await state.getData(state.domain, state.instance, windy);
+
+        if (!windxData || !windyData) {
+            console.log('No available data for wind');
+            return;
+        }
 
         let maxExpectedSpeed = Math.sqrt(
             Math.pow(windxData.attrs.vmax, 2) +
@@ -66,6 +83,7 @@ function windGenerator(context, state) {
         const U = windxData.valuesApi(state.frame, 0);
         const V = windyData.valuesApi(state.frame, 0);
 
+        vectorSource.clear();
         U.map((_, index) => {
             const angle = Math.atan2(-U[index], -V[index]);
             const magnitude = Math.sqrt(U[index] * U[index] + V[index] * V[index]);

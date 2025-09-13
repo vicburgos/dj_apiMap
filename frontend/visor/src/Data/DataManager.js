@@ -69,7 +69,8 @@ export class State extends EventTarget {
     async init() {
         // Default values
         const dafaultInstance = null;
-        const dafaultVariable = 'mp10_hd_species';
+        // const dafaultVariable = 'mp10_hd_species';
+        const dafaultVariable = null;
         await this.loadInstances(dafaultInstance);
         await this.loadVariables(dafaultVariable);
     }

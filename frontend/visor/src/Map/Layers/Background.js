@@ -43,7 +43,7 @@ export const background = {
             tileSize: 256,
         }),
         zIndex: 1,
-        opacity: 0.8,
+        opacity: 0.5,
         visible: true,
         properties: {name: 'Topográfico'},
     }),

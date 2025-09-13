@@ -16,6 +16,9 @@ function structureArray(nx, ny, Z) {
 export async function getData(domain, instance, var_name) {
     const apiUrl = `/api/data/?domain=${domain}&instance=${instance}&variable=${var_name}`;
     let response = await fetch(apiUrl);
+    if (!response.ok) {
+        return null
+    }
     const buffer = await response.arrayBuffer();
     const headerJSON = response.headers.get('X-Header');
     const metadata = JSON.parse(headerJSON);

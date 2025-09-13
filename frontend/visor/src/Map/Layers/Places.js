@@ -24,7 +24,7 @@ function placesGenerator(context) {
             fill: new Fill({ color: 'black' }),
             stroke: new Stroke({ color: 'white', width: 2 }),
             offsetY: -8,
-            offsetX: 2,
+            offsetX: 8,
             textAlign: 'left',
             textBaseline: 'middle',
         })
@@ -40,7 +40,7 @@ function placesGenerator(context) {
             fill: new Fill({ color: 'white' }),
             stroke: new Stroke({ color: 'black', width: 2 }),
             offsetY: -8,
-            offsetX: 2,
+            offsetX: 8,
             textAlign: 'left',
             textBaseline: 'middle',
         })

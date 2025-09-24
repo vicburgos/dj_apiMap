@@ -18,7 +18,6 @@ function spanishMonthNameByNumber(monthNumber) {
   return months[monthNumber] || '';
 }
 
-
 function reproductorGenerator(context, state) {
   
   const spanInput = document.createElement('span');
@@ -39,9 +38,18 @@ function reproductorGenerator(context, state) {
       border: '1.5px solid rgb(118, 118, 118)',
   });
 
+  function frame_adjust(dt){
+    // 23 para dt=15. Ajustar según dt cambie linealmente
+    return Math.min(Math.floor(23 * 15 / dt), 59);
+  }
+
+  // Variables to adjust the frame rate
+  let dt = context.ref_dt;
+  let framepersecond  = frame_adjust(dt); // frames per second
+
   function SetInputRangeLabel(frame) {
       let date = new Date(state.instance.replace("_", " ") + ":00:00Z");
-      date.setUTCMinutes(frame*context.ref_dt);
+      date.setUTCMinutes(frame*dt);
       if (context.optionLocalTime) {
           const localOffset = date.getTimezoneOffset();
           date.setMinutes(date.getMinutes() - localOffset);
@@ -60,11 +68,12 @@ function reproductorGenerator(context, state) {
   }
 
   const inputFrame = document.createElement('input');
+  inputFrame.title="Selector de tiempo"
   inputFrame.id = 'time-selector';
   inputFrame.type  = 'range';
   inputFrame.step  = 1;
-  inputFrame.min   = Math.floor(context.startHour * 60 / context.ref_dt);
-  inputFrame.max   = Math.floor(context.endHour   * 60 / context.ref_dt);
+  inputFrame.min   = Math.floor(context.startHour * 60 / dt);
+  inputFrame.max   = Math.floor(context.endHour   * 60 / dt);
   inputFrame.value = inputFrame.min
   Object.assign(inputFrame.style, {
       width: '100%',
@@ -77,8 +86,9 @@ function reproductorGenerator(context, state) {
   inputFrame.style.borderRadius = '5px';
   inputFrame.style.height = '80%';
 
+  // Sincronizacion de input label y state.frame
   SetInputRangeLabel(inputFrame.min);
-
+  state.frame = inputFrame.min;
   inputFrame.addEventListener('change', (event) => {
       const frame = event.target.value;
       state.frame = frame;
@@ -94,9 +104,7 @@ function reproductorGenerator(context, state) {
   });
 
   //// Animacion
-  const framepersecond  = 23;
-  const framesPerUpdate = Math.floor(1000 / framepersecond / 16.67); 
-
+  let framesPerUpdate = Math.floor(1000 / framepersecond / 16.67); 
   let frameCount = 0;
   let animationId = null;
   
@@ -119,8 +127,8 @@ function reproductorGenerator(context, state) {
 
   //// Botones
   const styleButton = {
-      width: '20px',
-      fontSize: '20px',
+      width: '18px',
+      fontSize: '18px',
       userSelect: 'none',
       cursor: 'pointer',
   }
@@ -204,7 +212,7 @@ function reproductorGenerator(context, state) {
       height: '25px',
       display: 'flex',
       flexDirection: 'row',
-      gap: '3px',
+      gap: '2px',
       alignItems: 'center',
       padding: '2px',
       background: 'rgba(255, 255, 255)',
@@ -233,26 +241,29 @@ function reproductorGenerator(context, state) {
     buttonPause.style.display = 'none';
   });
 
-  // // Update inputRange according to the selected domain
-  // state.addEventListener('change:variable', (event) => {
-  //   buttonPause.click();
-  //   if (event.detail){
-  //     const variableNew    = event.detail.newValue;
-  //     const variableOld    = event.detail.oldValue;
-  //     const inputMaxNew  = Math.floor(context.endHour * 60 / context.domains[variableNew].dt);
-  //     const inputMaxOld  = Math.floor(context.endHour * 60 / context.domains[variableOld].dt);
-  //     if (inputMaxOld != inputMaxNew) {
-  //       // Update Value
-  //       const currentSelectedFrame   = inputFrame.value;
-  //       const percentageCurrentFrame = currentSelectedFrame / inputMaxOld;
-  //       const newValue = Math.round(percentageCurrentFrame * inputMaxNew);
-  //       inputFrame.min   = Math.floor(context.startHour * 60 / context.domains[variableNew].dt);
-  //       inputFrame.max   = Math.floor(context.endHour   * 60 / context.domains[variableNew].dt);
-  //       inputFrame.value = newValue;
-  //       inputFrame.dispatchEvent(new Event('change'));
-  //     }
-  //   }
-  // });
+  // Update inputRange according currentData
+  state.addEventListener('change:currentData', () => {
+      const current_dt   = dt 
+      const new_dt       = state.currentData?.attrs.dt || context.ref_dt;
+      if (current_dt != new_dt) {
+        // Update Value
+        const inputMaxNew  = Math.floor(context.endHour * 60 / new_dt);
+        const inputMaxOld  = Math.floor(context.endHour * 60 / current_dt);
+
+        const inputMinOld  = Math.floor(context.startHour * 60 / current_dt);
+        const inputMinNew  = Math.floor(context.startHour * 60 / new_dt);
+
+        const currentSelectedFrame   = inputFrame.value;
+        const percentageCurrentFrame = (currentSelectedFrame-inputMinOld)/(inputMaxOld-inputMinOld);
+        const newValue = Math.round(percentageCurrentFrame * (inputMaxNew-inputMinNew) + inputMinNew);
+        inputFrame.min   = inputMinNew;
+        inputFrame.max   = inputMaxNew;
+        inputFrame.value = newValue;
+        dt = new_dt;
+        framesPerUpdate = Math.floor(1000 / frame_adjust(dt)/ 16.67);
+        inputFrame.dispatchEvent(new Event('change'));
+      }
+  });
 
 
   // Generamos una pausa cuando se inicia la carga de datos

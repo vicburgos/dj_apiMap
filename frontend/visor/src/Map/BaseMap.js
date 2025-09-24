@@ -1,7 +1,5 @@
 import 'ol/ol.css';
 import Map from 'ol/Map';
-import View from 'ol/View';
-import { fromLonLat } from 'ol/proj';
 import { Attribution, Control } from 'ol/control';
 import { MouseWheelZoom, DragPan } from 'ol/interaction';
 import { platformModifierKeyOnly } from 'ol/events/condition';
@@ -12,16 +10,14 @@ import { contourGenerator } from './Layers/Contour.js';
 import { windGenerator } from './Layers/Wind.js';
 import { domainGenerator } from './Layers/Domain.js';
 import { setupMousePosition } from './Widget/MousePosition.js';
-import { setupPopup } from './Widget/Popup.js';
-
 
 async function mapGenerator(context, state) {
 
     const mapContainer = document.createElement('div');
     mapContainer.id = 'map';
     const layersBackground = [
-        background.black,
         background.white,
+        background.black,
         background.satellite,
         background.openStreet,
     ]
@@ -38,18 +34,23 @@ async function mapGenerator(context, state) {
             map.removeControl(control);
         }
     });
-    // // Remove Interaction
+    // Agregamos un MouseWheelZoom que solo se activa con Ctrl
+    map.getInteractions().forEach(function (interaction) {
+        if (interaction instanceof MouseWheelZoom) {
+            map.removeInteraction(interaction);
+        }
+    });
+    map.addInteraction(new MouseWheelZoom({
+        condition: platformModifierKeyOnly,
+        duration: 250
+    }));
+
+    // // Agregamos un DragPan que solo se activa con Ctrl
     // map.getInteractions().forEach(function (interaction) {
-    //     if (interaction instanceof MouseWheelZoom || interaction instanceof DragPan) {
+    //     if (interaction instanceof DragPan) {
     //         map.removeInteraction(interaction);
     //     }
     // });
-    // // Agregamos un MouseWheelZoom que solo se activa con Ctrl
-    // map.addInteraction(new MouseWheelZoom({
-    //     condition: platformModifierKeyOnly,
-    //     duration: 250
-    // }));
-    // // Agregamos un DragPan que solo se activa con Ctrl
     // map.addInteraction(new DragPan({
     //     condition: platformModifierKeyOnly,
     //     kinetic: null, // Desactivamos la inercia
@@ -71,17 +72,16 @@ async function mapGenerator(context, state) {
     map.addLayer(contourLayer);
     contourLayer.setZIndex(2);   
 
-    // Agregamos Switch-Places
-    const [switchLabelsHtml, vectorLayerLabels] = placesGenerator(context, map);
-    map.addLayer(vectorLayerLabels);
-    vectorLayerLabels.setZIndex(4);
-    switchLabelsHtml.querySelector('input').click();
-
     // Agregamos Switch-Viento
     const [switchWindHtml, vectorLayerWind, setWind, setGrid] = windGenerator(context, state);
     map.addLayer(vectorLayerWind);
     vectorLayerWind.setZIndex(3);
 
+    // Agregamos Switch-Labels
+    const [switchLabelsHtml, vectorLayerLabels] = placesGenerator(context, map);
+    map.addLayer(vectorLayerLabels);
+    vectorLayerLabels.setZIndex(4);
+    
     // Switches Wrap
     const wrapperSwitch = document.createElement('div');
     Object.assign(wrapperSwitch.style, {
@@ -108,9 +108,6 @@ async function mapGenerator(context, state) {
         right: '10px',
     });
     mapContainer.appendChild(mouseContainer);
-    
-    // Agregamos Popup
-    const [pointSerieTrigger] = setupPopup(context, state, map);
 
     //// TODO: Modular
     // Agregamos selector de capa
@@ -165,66 +162,19 @@ async function mapGenerator(context, state) {
     wrapperSelectLayer.appendChild(iconSelect);
     wrapperSelectLayer.appendChild(select);
     ////End-TODO: Modular
-
-
-    //// Manejo de Estados del tipo set
-    state.addEventListener('change:domain', async () => {
-        await state.loadInstances();
-        setGrid(false);
-        setWind(false);
-        setColorbar(false);
-        setContour(false);
-        await setBorder({waitOption:true});
-        state.dispatchEvent(new CustomEvent('change:instance'));
-    });
-    state.addEventListener('change:instance', async () => {
-        await state.loadVariables();
-        switchWindHtml.querySelector('input').checked
-            ? (await setGrid(), await setWind())
-            : null;
-        state.dispatchEvent(new CustomEvent('change:variable'));
-    });
-    state.addEventListener('change:variable', async () => {
-        await state.setCurrentData();
-        if (state.variable && state.currentData) {
-            document.dispatchEvent(new CustomEvent('table:start'));
-            document.dispatchEvent(new CustomEvent('serie:start'));
-            setContour();
-            setColorbar();
-        } else {
-            setColorbar(false);
-            setContour(false);
-            document.dispatchEvent(new CustomEvent('table:clean'));
-            document.dispatchEvent(new CustomEvent('serie:clean'));
-        }
-    });
-    state.addEventListener('change:frame', async () => {
-        if (state.variable) {
-            setContour();
-        } else {
-            setContour(false);
-        }
-        switchWindHtml.querySelector('input').checked
-            ? await setWind() :
-            null
-    });
-
-    //Inicializacion
-    // Ahora renderizar el mapa
-    map.render();
-    map.once('postrender', async () => {
-        await setBorder();
-        if (state.variable) {
-            await state.setCurrentData();
-            setContour();
-            setColorbar();
-            const {lon, lat} = context.pointSerieDefault;
-            pointSerieTrigger(lon, lat);
-            document.dispatchEvent(new CustomEvent('table:start'));
-        }
-    });
     
-    return { mapContainer, map, wrapperSelectLayer }
+    return { 
+        mapContainer, 
+        map, 
+        wrapperSelectLayer,
+        setContour,
+        setColorbar,
+        setWind,
+        setGrid,
+        setBorder,
+        switchLabelsHtml,
+        switchWindHtml,
+    }
 }
 
 export { mapGenerator };

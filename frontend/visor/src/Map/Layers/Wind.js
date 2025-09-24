@@ -39,7 +39,7 @@ function windGenerator(context, state) {
         }
         // HARD CODE variables para la grilla de viento
         let varReference = 'mp10_ld_v10';
-        const Data = await state.getData(state.domain, state.instance, varReference);
+        const Data = await state.loadData(state.domain, state.instance, varReference);
 
         if (!Data) {
             console.log('No available data for wind');
@@ -66,8 +66,8 @@ function windGenerator(context, state) {
         // HARD CODE variables para la grilla de viento
         let windx = 'mp10_ld_u10';
         let windy = 'mp10_ld_v10';
-        const windxData = await state.getData(state.domain, state.instance, windx);
-        const windyData = await state.getData(state.domain, state.instance, windy);
+        const windxData = await state.loadData(state.domain, state.instance, windx);
+        const windyData = await state.loadData(state.domain, state.instance, windy);
 
         if (!windxData || !windyData) {
             console.log('No available data for wind');

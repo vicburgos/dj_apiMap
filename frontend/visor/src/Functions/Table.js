@@ -11,7 +11,7 @@ import 'tabulator-tables/dist/css/tabulator_simple.css';
 import { LineString, Polygon, Point } from 'ol/geom.js';
 
 function formaterText(text) {
-    // Primera letra den mayuscula y separar palabras por _
+    // Primera letra con mayuscula y separar palabras por _
     let words = text.split('_');
     for (let i = 0; i < words.length; i++) {
         words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1);
@@ -19,47 +19,41 @@ function formaterText(text) {
     return words.join(' ');
 }
 
-async function tableGenerator(context, state, map) {
-
-    const loadButton = document.createElement('button');
-    loadButton.textContent = "Generar escenario";
-    loadButton.classList.add('btn', 'btn-secondary')
-    Object.assign(loadButton.style, {
-        fontSize: '12px',
+function tableGenerator(context, state, map) {
+    const styleButton = {
+        fontSize: '10px',
         fontWeight: 'bold',
         userSelect: 'none',
         fontFamily: 'Arial, sans-serif',
         height: '30px',
-        maxWidth: '1000px',
-        width: '98%',
+        minWidth: '110px',
+        maxWidth: '300px',
+        width: '100%',
         marginTop: '5px',
         marginBottom: '5px',
         alignSelf: 'center',
+    };
+    const buttonApplySetDataSources = document.createElement('button');
+    buttonApplySetDataSources.textContent = "Aplicar Datos";
+    buttonApplySetDataSources.classList.add('btn', 'btn-secondary')
+    Object.assign(buttonApplySetDataSources.style, styleButton);
+    const buttonLoad = document.createElement('button');
+    buttonLoad.textContent = "Cargar Datos**";
+    buttonLoad.id = "load-data";
+    buttonLoad.classList.add('btn', 'btn-secondary')
+    Object.assign(buttonLoad.style, styleButton);
+    const buttonDownload = document.createElement('button');
+    buttonDownload.textContent = "Descargar Tabla";
+    buttonDownload.id = "download-csv";
+    buttonDownload.classList.add('btn', 'btn-secondary')
+    Object.assign(buttonDownload.style, styleButton);
+
+    const tableContainer = document.createElement('div');
+    Object.assign(tableContainer.style, {
+        width: "100%",
+        fontSize: "14px",
+        userSelect: "none",
     });
-
-    const downloadButton = document.createElement('button');
-    downloadButton.textContent = "Descargar CSV";
-    downloadButton.id = "download-csv";
-    downloadButton.classList.add('btn', 'btn-secondary')
-    Object.assign(downloadButton.style, {
-        fontSize: '12px',
-        fontWeight: 'bold',
-        userSelect: 'none',
-        fontFamily: 'Arial, sans-serif',
-        height: '30px',
-        maxWidth: '1000px',
-        width: '98%',
-        marginTop: '5px',
-        marginBottom: '5px',
-        alignSelf: 'center',
-    });
-
-
-    const tableHtml = document.createElement('div');
-    tableHtml.style.width = "100%";
-    tableHtml.style.fontSize = "10px";
-    tableHtml.style.fontSize = "14px";
-    tableHtml.style.userSelect = "none";
 
     const styleDeactive = new Style({
         stroke: new Stroke({
@@ -89,7 +83,7 @@ async function tableGenerator(context, state, map) {
     map.addLayer(vectorLayer);
 
     let tableData = [];
-    const table = new Tabulator(tableHtml, {
+    const table = new Tabulator(tableContainer, {
         data: tableData,           //load row data from array
         height: "100%",
         pagination: true,          //enable pagination
@@ -101,15 +95,25 @@ async function tableGenerator(context, state, map) {
         },
         columns: [
             { title: "Id", field: "id_inner", headerSort: false, hozAlign: "center", width: 50, resizable: false },
-            { title: "Fuente", field: "emisid", width: 120 },
+            { title: "Fuente", field: "emisid", width: 110 },
             { title: "Faena", field: "project", width: 80 },
             { title: "Abatimiento (%)", field: "abatimiento", sorter: "number", hozAlign: "left", editor: "input", editor: true, validator: ["min:0", "max:100", "numeric"] },
             { title: "Emisión (kg/día)", field: "emision", sorter: "number", hozAlign: "left", editor: "input", editor: true, validator: ["min:0", "max:10000"] },
         ],
-    });    
+    });
 
-    function setSources(geojson, abVector, emVector) {
-        // Now read data from geojson and populate a tabledata
+    function setTableAndMapSources(active = true) {
+        // Limpiar tabla y mapa
+        table.setData([]);
+        tableData = [];
+        vectorSource.clear();
+        if (!active) {
+            return;
+        }
+        // Generar tabla y mapa si active es true
+        let geojson = state.currentData.geoJsonSources;
+        let abVector = state.currentData.abVector;
+        let emVector = state.currentData.emVector;
         geojson.features.forEach((feature) => {
             const properties = feature.properties;
             const geometry = feature.geometry;
@@ -155,72 +159,28 @@ async function tableGenerator(context, state, map) {
             const feature = tableData.find(f => f.id_inner === id_inner).olFeature;
             feature.setStyle(styleDeactive);
         });
-
-        // // Click en la tabla pero NO en una fila
-        // tableHtml.addEventListener("click", function (e) {
-        //     // Elemento dom clickeado e sobre el target html para un ancestro mas cercano
-        //     if (!e.target.closest(".tabulator-row")) {
-        //         table.deselectRow();
-        //         vectorSource.forEachFeature((feature) => {
-        //             feature.setStyle(styleDeactive);
-        //         });
-        //     }
-        // });
     }
 
-    // Funcionalidad para cargar datos
-    loadButton.addEventListener('click', async () => {
-        if (state.variable) {
-            table.getRows().forEach((row) => {
-                const data = row.getData();
-                const id_inner = data.id_inner;
-                const abValue = parseFloat(data.abatimiento);
-                const emValue = parseFloat(data.emision);
-                state.currentData.abVector[id_inner] = isNaN(abValue) ? 0 : abValue;
-                state.currentData.emVector[id_inner] = isNaN(emValue) ? 0 : emValue;
-            });
-            state.dispatchEvent(new CustomEvent('change:frame'));
-            document.dispatchEvent(new CustomEvent('serie:start'));
-        } else {
-            alert("Seleccione una especie para generar el escenario");
-        }
-        
-    });
-    // Funcionalidad para descargar CSV
-    downloadButton.addEventListener('click', async () => {
-        if (state.variable) {
-            table.download("csv", "table_data.csv");
-        } else {
-            alert("Primero seleccione una especie");
-        }
-    });
-    // Funcionalidad con Enter
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            event.preventDefault(); 
-            loadButton.click();
-        }
-    });
-    
-    document.addEventListener('table:clean', () => {
-        table.setData([]);
-        tableData = [];
-        vectorSource.clear();
-    });
-    
-    document.addEventListener('table:start', () => {
-        table.setData([]);
-        tableData = [];
-        vectorSource.clear();
-        if (state.variable) {
-            let geoJsonSources = state.currentData.geoJsonSources;
-            let abVector = state.currentData.abVector;
-            let emVector = state.currentData.emVector;
-            setSources(geoJsonSources, abVector, emVector);
-        }
-    });
+    function setDataSources() {
+        table.getRows().forEach((row) => {
+            const data = row.getData();
+            const id_inner = data.id_inner;
+            const abValue = parseFloat(data.abatimiento);
+            const emValue = parseFloat(data.emision);
+            state.currentData.abVector[id_inner] = isNaN(abValue) ? 0 : abValue;
+            state.currentData.emVector[id_inner] = isNaN(emValue) ? 0 : emValue;
+        });
+    }
 
-    return [tableHtml, loadButton, downloadButton];
+    return { 
+        tableContainer,
+        table,
+        buttonApplySetDataSources,
+        buttonLoad,
+        buttonDownload, 
+        setTableAndMapSources, 
+        setDataSources 
+    };
 }
 
 export { tableGenerator };

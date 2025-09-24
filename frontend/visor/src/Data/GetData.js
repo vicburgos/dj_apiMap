@@ -15,15 +15,20 @@ function structureArray(nx, ny, Z) {
 
 export async function getData(domain, instance, var_name) {
     const apiUrl = `/api/data/?domain=${domain}&instance=${instance}&variable=${var_name}`;
-    let response = await fetch(apiUrl);
-    if (!response.ok) {
-        return null
+
+    let response;
+    try {
+        response = await fetch(apiUrl);
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        return null;
     }
+
     const buffer = await response.arrayBuffer();
     const headerJSON = response.headers.get('X-Header');
     const metadata = JSON.parse(headerJSON);
 
-    //Destructurar los valores
+    //Descomponemos metadata
     const {
         nt,
         nz,
@@ -43,16 +48,12 @@ export async function getData(domain, instance, var_name) {
     const apiUrlXX = `/api/data/?domain=${domain}&instance=${instance}&variable=${attrs['coordx']}`;
     const responseXX = await fetch(apiUrlXX);
     const bufferXX = await responseXX.arrayBuffer();
-    const headerJSONXX = response.headers.get('X-Header');
-    const metadataXX = JSON.parse(headerJSONXX);
-    const valuesToReturnXX = new Float32Array(bufferXX)
+    const valuesToReturnXX = new Float32Array(bufferXX); // Hard Code: debe ser siempre float32
 
     const apiUrlYY = `/api/data/?domain=${domain}&instance=${instance}&variable=${attrs['coordy']}`;
     const responseYY = await fetch(apiUrlYY);
     const bufferYY = await responseYY.arrayBuffer();
-    const headerJSONYY = response.headers.get('X-Header');
-    const metadataYY = JSON.parse(headerJSONYY);
-    const valuesToReturnYY = new Float32Array(bufferYY)
+    const valuesToReturnYY = new Float32Array(bufferYY); // Hard Code: debe ser siempre float32
 
     // Creamos proyeccion
     const ZLON = structureArray(
@@ -106,7 +107,9 @@ export async function getData(domain, instance, var_name) {
     const regularExpressionFilter = new RegExp("species");
     if (var_name.match(regularExpressionFilter)) {
         let species = var_name.split('_')[0]
-        let dataSources = await fetch(`/api/sources/?&domain=${domain}&instance=${instance}&species=${species}`);
+        let dataSources = await fetch(`
+            /api/sources/?&domain=${domain}&instance=${instance}&species=${species}
+        `);
         geoJsonSources = await dataSources.json();
     } else {
         // Generamos geojson vacio
@@ -116,7 +119,7 @@ export async function getData(domain, instance, var_name) {
         };
     }
     // Obtener los project existentes como properties de cada feature
-    let projects = [...new Set(geoJsonSources.features.map(f => f.properties.project))];    
+    let projects = [...new Set(geoJsonSources.features.map(f => f.properties.project))];
     let abVector =
         compress == 'uint8' ? new Uint8Array(nz) :
             compress == 'float16' ? new Float16Array(nz) :
@@ -128,7 +131,7 @@ export async function getData(domain, instance, var_name) {
     // Dafault Values. A simple linear combination
     if (var_name.match(regularExpressionFilter)) {
         abVector[0] = 0;
-        emVector[0] = 5000;
+        emVector[0] = 1000;
     } else {
         abVector[0] = 0;
         emVector[0] = 1;
@@ -142,12 +145,13 @@ export async function getData(domain, instance, var_name) {
         nx: nx,
         attrs: attrs,
         values: valuesToReturn,
-        compress,
         valuesApi: valuesApi,
-        proj_ij_to_lonlat: proj_ij_to_lonlat,
-        proj_lonlat_to_ij: proj_lonlat_to_ij,
         valuesXX: valuesToReturnXX,
         valuesYY: valuesToReturnYY,
+        proj_ij_to_lonlat: proj_ij_to_lonlat,
+        proj_lonlat_to_ij: proj_lonlat_to_ij,
+
+        // Variables Espaciales
         geoJsonSources: geoJsonSources,
         projects: projects,
         abVector: abVector,

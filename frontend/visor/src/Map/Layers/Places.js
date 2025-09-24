@@ -8,11 +8,16 @@ import { SwitchFactory } from '../../utils/SwitchOnOFF/0_SwitchContainer.js';
 function placesGenerator(context) {
     //// OL
     const data = context.places;
-    const vectorSource = new VectorSource({
-        features: new GeoJSON().readFeatures(data, {
-            featureProjection: 'EPSG:3857' // Proyección del mapa (Web Mercator)
-        })
-    });
+    let vectorSource;
+    if (Object.keys(data).length !== 0) {
+        vectorSource = new VectorSource({
+            features: new GeoJSON().readFeatures(data, {
+                featureProjection: 'EPSG:3857' // Proyección del mapa (Web Mercator)
+            })
+        });
+    } else {
+        vectorSource = new VectorSource();
+    }
     const estiloClaro = new Style({
         image: new CircleStyle({
             radius: 4,

@@ -1,17 +1,13 @@
-import 'ol/ol.css';
-import './stylePopup.css';
 import { toLonLat, fromLonLat } from 'ol/proj.js';
 import Overlay from 'ol/Overlay';
 import { Popover } from 'bootstrap';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Modify } from 'ol/interaction';
 import { Feature } from 'ol';
 import { Point } from 'ol/geom';
-import { Select } from 'ol/interaction';
+import { Select, Modify } from 'ol/interaction';
 import {altKeyOnly, click, pointerMove} from 'ol/events/condition.js';
-import { Circle, Fill, Stroke } from 'ol/style.js';
-import { Style } from 'ol/style.js';
+import { Circle, Fill, Stroke, Style } from 'ol/style.js';
 import { polygonContains } from 'd3-polygon';
 
 
@@ -46,6 +42,7 @@ const select = new Select({
 
 // Popup
 const popupContainer = document.createElement('div');
+popupContainer.style.minWidth = '200px';
 popupContainer.className = 'ol-popup';
 Object.assign(popupContainer.style, {
   userSelect: 'none',
@@ -187,4 +184,4 @@ function setupPopup(context, state, map) {
   return [pointSerieTrigger];
 }
 
-export { popupContainer, setupPopup };
+export { setupPopup };

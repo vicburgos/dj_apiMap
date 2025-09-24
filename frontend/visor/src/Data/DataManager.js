@@ -12,23 +12,28 @@ export class Context {
         try {
             const response = await fetch('/api/context');
             if (response.ok) {
-                const data             = await response.json();
-                this.hoursRun          = data.hoursRun;
-                this.startHour         = data.startHour;
-                this.endHour           = data.endHour;
-                this.optionLocalTime   = data.optionLocalTime;
-                this.ref_dt            = data.ref_dt;
-                this.domains           = data.domains;
-                this.places            = data.places;
-                this.pointSerieDefault = data.pointSerieDefault;
+                const data               = await response.json();
+                this.hoursRun            = data.hoursRun;
+                this.startHour           = data.startHour;
+                this.endHour             = data.endHour;
+                this.optionLocalTime     = data.optionLocalTime;
+                this.ref_dt              = data.ref_dt;
+                this.domains             = data.domains;
+                this.places              = data.places;
+                this.pointSerieDefault   = data.pointSerieDefault;
+                this.instanceDefaultFail = null
 
             } else {
                 //Default values
-                this.hoursRun        = 24*7+6;
-                this.startHour       = 0;
-                this.endHour         = 24*7+6;
-                this.optionLocalTime = false,
-                this.domains         = ['MyDomain'];
+                this.hoursRun            = 24;
+                this.startHour           = 0;
+                this.endHour             = 24;
+                this.optionLocalTime     = false,
+                this.ref_dt              = 15;
+                this.domains             = ['northamerica'];
+                this.places              = {};
+                this.pointSerieDefault   = null;
+                this.instanceDefaultFail = "1949-01-05_00"
             }
         } catch (error) {
             console.error('Error loading context:', error);
@@ -36,7 +41,13 @@ export class Context {
     }
 }
 
+// EventTarget sera util para utilizar this.dispatchEvent como objeto state
 export class State extends EventTarget {
+    // Parametros que definen el state
+    // Son definidas como variables privadas para emitir eventos al modificarlas
+    // Seran gerarcias. Es decir, segun el siguiente orden,
+    // una variable depende que la anterior este definida,
+    // En caso contrario, queda como null.
     #domain;
     #instance;
     #variable;
@@ -45,21 +56,28 @@ export class State extends EventTarget {
 
     constructor(context) {
         super();
+        // Inicializacion de parametros desde el context
         this.#domain     = context.domains[0];
         this.#instance   = null;
         this.#variable   = null;
-        this.#frame      = Math.floor(context.startHour * (60 / context.ref_dt))
-        this.#level      = 0;
+        this.#frame      = null;
+        this.#level      = null;
 
-        this.cache       = {};   // para guardar datos precargados
-        this.currentData = null; // data actual
+        this.cache       = {};   // para guardar datos precargados con clave _cacheKey
+        this.currentData = null; // data actual (estara en cache)
 
         // NUEVO: listas de opciones disponibles
-        this.domains     = context.domains || [];
-        this.instances   = [];
-        this.variables   = [];
+        this.domains             = context.domains || [];
+        this.instances           = this.instanceDefault? [context.instanceDefault] : [];
+        this.variables           = [];
+        this.instanceDefaultFail = context.instanceDefaultFail;
     }
 
+    _cacheKey(domain, instance, variable) {
+        return `${domain}__${instance}__${variable}`;
+    }
+
+    // Getters para referenciar los parametros
     get instance() { return this.#instance;}
     get domain()   { return this.#domain;  }
     get variable() { return this.#variable;}
@@ -68,9 +86,9 @@ export class State extends EventTarget {
 
     async init() {
         // Default values
-        const dafaultInstance = null;
-        // const dafaultVariable = 'mp10_hd_species';
-        const dafaultVariable = null;
+        let dafaultInstance = null;
+        let dafaultVariable = null;
+        dafaultVariable = "mp10_hd_species";
         await this.loadInstances(dafaultInstance);
         await this.loadVariables(dafaultVariable);
     }
@@ -78,17 +96,24 @@ export class State extends EventTarget {
     async loadInstances(dafaultDate=null) {
         if (!this.#domain) {
             this.#instance = null;
-            this.instances = [];
+            this.#variable = null;
         } else {
-            const res = await fetch(`/api/instances/?domain=${this.#domain}`);
-            const json = await res.json();
-            this.instances = json.instances || [];
-            
-            // Atnencion! Actualizacion interna sin evento
+            try {
+                const res = await fetch(`/api/instances/?domain=${this.#domain}`);
+                const json = await res.json();
+                this.instances = json.instances? json.instances : [this.instanceDefaultFail];
+            } catch(err) {
+                console.error(`Error loading instances for ${this.#domain}:`, err);
+                this.instances = [this.instanceDefaultFail];
+            }
+
+            // Atencion! Actualizacion interna sin evento
+            // En la lista de instancias debe estar la instancia por defecto si existe
             if (dafaultDate && this.instances.includes(dafaultDate)) {
                 this.#instance = dafaultDate;
             }
             else {
+                // Poner la ultima de la lista o null
                 if (!this.instances.includes(this.#instance)) {
                     this.#instance = this.instances.sort()[this.instances.length-1] || null;
                 }
@@ -100,11 +125,17 @@ export class State extends EventTarget {
 
     async loadVariables(dafaultVariable=null) {
         if (!this.#domain || !this.#instance) {
+            this.#variable = null;
             this.variables = [];
         } else {
-            const res = await fetch(`/api/variables/?domain=${this.#domain}&instance=${this.#instance}`);
-            const json = await res.json();
-            this.variables = json.variables || [];
+            try {
+                const res = await fetch(`/api/variables/?domain=${this.#domain}&instance=${this.#instance}`);
+                const json = await res.json();
+                this.variables = json.variables? json.variables : [];
+            } catch(err) {
+                console.error(`Error loading variables for ${this.#domain} ${this.#instance}:`, err);
+                this.variables = [];
+            }
 
             // Atnencion! Actualizacion interna sin evento
             if (dafaultVariable && this.variables.includes(dafaultVariable)) {
@@ -159,15 +190,19 @@ export class State extends EventTarget {
         }
     }
 
-    _cacheKey(domain, instance, variable) {
-        return `${domain}__${instance}__${variable}`;
-    }
-
     async loadData(domain, instance, variable) {
-        const key = this._cacheKey(domain, instance,  variable);
+        if (!domain || !instance || !variable) {
+            return null;
+        }
+
+        const key = this._cacheKey(domain, instance, variable);
+
+        // Si ya esta en cache, devolver
         if (this.cache[key]) {
             return this.cache[key];
         }
+
+        // Si no esta en cache. Iniciar carga con evento
         document.dispatchEvent(new CustomEvent('loading:start'));
         try {
             const data      = await getData(domain, instance, variable);
@@ -177,16 +212,13 @@ export class State extends EventTarget {
             this.cache[key] = null;
         }
         document.dispatchEvent(new CustomEvent('loading:end'));
-        return this.cache[key];
-    }
 
-    async getData(domain, instance, variable) {
-        const data = await this.loadData(domain, instance, variable);
-        return data;
+        return this.cache[key];
     }
 
     async setCurrentData() {
         this.currentData = await this.loadData(this.#domain, this.#instance,  this.#variable);
+        this.dispatchEvent(new CustomEvent('change:currentData', { detail: this.currentData }));
     }
 
     // Emitir cambios 

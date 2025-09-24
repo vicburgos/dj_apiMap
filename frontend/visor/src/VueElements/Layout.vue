@@ -2,7 +2,7 @@
   <div style="height: 100%;"> 
     <el-splitter>
 
-      <el-splitter-panel size="30%" style="border-right:5px solid silver">
+      <el-splitter-panel size="32%" style="border-right:5px solid silver">
 
         <div id="vue-panel-table" class="box" v-loading="loading"
           element-loading-background="rgba(255, 255, 255, 0.4)">
@@ -10,7 +10,7 @@
       
       </el-splitter-panel>
 
-      <el-splitter-panel size="70%">
+      <el-splitter-panel size="68%">
 
         <el-splitter layout="vertical">
           <el-splitter-panel size="65%" style="border-bottom:5px solid silver">
@@ -55,7 +55,8 @@ onMounted(() => {
 <style scoped>
 #vue-panel-map {
   height: 100%;
-  background-color: #2c2c2c;
+  /* background-color: #2c2c2c; */
+  background-color: #f0f0f0;
 }
 #vue-panel-serie {
   height: 100%;

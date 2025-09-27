@@ -10,7 +10,7 @@ import { altKeyOnly, click, pointerMove } from 'ol/events/condition.js';
 import { Circle, Fill, Stroke, Style } from 'ol/style.js';
 import { polygonContains } from 'd3-polygon';
 
-import {generatePopup} from '../utils/Alert.js';
+import { dispatchAlert } from '../utils/Alert.js'
 
 
 // Draw ol
@@ -97,12 +97,20 @@ function updateStartDateAxis(instance, context, units = '') {
             max: startDate.getTime() + context.endHour * 60 * 60 * 1000,
         },
         yAxis: {
-            title: { 
-                text: units, 
-                rotation: 0, 
-                useHTML: true, 
-                offset: 56,
+            title: {
+                text: units,
+                rotation: 0,
+                useHTML: true,
+                offset: 58,
+                style: {
+                    fontSize: '11px'
+                }
             },
+            labels: {
+                style: {
+                    fontSize: '11px'
+                }
+            }
         }
     };
 }
@@ -122,7 +130,7 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
             // 2px    gap  (x3)
             // 7.5px  medio radio de thumb circular
             marginLeft: 10 + 1.5 + 2 + 18 * 3 + 3 * 2 + 7.5,
-            marginRight: 10 + 1.5 + 2 + 7.5,
+            marginRight: 10 + 1.5 + 7.5,
             marginBottom: 80,
         },
         title: { text: '' },
@@ -189,7 +197,6 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
     });
 
 
-    //Nuevo 22/09
     /**
      * Activa o desactiva la serie temporal en el punto (lonNew, latNew).
      * Si active es false, se limpia el gráfico.
@@ -198,6 +205,12 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
     let lonSerie = null;
     let latSerie = null;
     function setSerie(active = true, lonNew = lonSerie, latNew = latSerie) {
+
+        if (lonNew && latNew && !polygonContains(context.borderCoords, [lonNew, latNew])) {
+            dispatchAlert("El punto para la serie temporal no se encuentra en el dominio seleccionado.");
+            return;
+        }
+
         //Limpiamos grafico previo
         while (Chart.series.length > 0) {
             Chart.series[0].remove(false);
@@ -224,52 +237,55 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
         updateAxis();
         const startDate = parseInstanceToDate(state.instance, context);
         const data = state.currentData;
-        const geoJsonSources = state.currentData.geoJsonSources;
-        const totalProjects = 'total';
-        const projectsAndTotal = [...state.currentData.projects, totalProjects];
         const [i, j] = data.proj_lonlat_to_ij(lonSerie, latSerie);
-        const { nx, nz, nt, emVector, abVector } = data;
+        const { nx, ny, nv, nt, valuesApi, emVector, abVector } = data;
+
+        const geoJsonSources = state.currentData.geoJsonSources;
+        const totalKey = 'total';
+        let seriesKeys = [
+            ...new Set(geoJsonSources.features.map(f => f.properties.project)),
+            totalKey
+        ];
 
         // generate a object with keys given by projects and empty array as value   
-        const SeriePerProjects = {};
-        projectsAndTotal.forEach(p => SeriePerProjects[p] = []);
-
+        const series = {};
+        seriesKeys.forEach(p => series[p] = []);
+        
         for (let t = 0; t < nt; t++) {
-            const framePerProject = {};
-            projectsAndTotal.forEach(p => framePerProject[p] = 0);
-            for (let z = 0; z < nz; z++) {
-                let project = geoJsonSources.features[z]?.properties.project || ''; // Si se tiene projects
-                let value = data.valuesApi(t, z)[j * nx + i] * emVector[z] * (1 - abVector[z] / 100);
-                framePerProject[project] += value;
-                framePerProject[totalProjects] += value;
+            const temporaryAccumulator = {};
+            seriesKeys.forEach(p => temporaryAccumulator[p] = 0);
+            for (let v = 0; v < nv; v++) {
+                let key = geoJsonSources.features[v]?.properties.project || '';
+                let value = valuesApi(t, v, state.level)[j * nx + i] * emVector[v] * (1 - abVector[v] / 100);
+                temporaryAccumulator[key]      += value;
+                temporaryAccumulator[totalKey] += value;
             }
             const dt = state.currentData?.attrs.dt || context.ref_dt;
             const timestamp = startDate.getTime() + t * dt * 60 * 1000;
-            projectsAndTotal.forEach(p => {
-                SeriePerProjects[p].push([timestamp, framePerProject[p]]);
+            seriesKeys.forEach(p => {
+                series[p].push([timestamp, temporaryAccumulator[p]]);
             });
         }
 
-        projectsAndTotal.forEach((p, idx) => {
-            (p == totalProjects)
+        seriesKeys.forEach((p, idx) => {
+            (p == totalKey)
                 ? Chart.addSeries({
                     name: p.toUpperCase(),
-                    data: SeriePerProjects[p],
+                    data: series[p],
                     color: "black",
                     dashStyle: 'ShortDash',
                     fillOpacity: 0
                 }, false)
                 : Chart.addSeries({
                     name: p.toUpperCase(),
-                    data: SeriePerProjects[p],
-                    color: Highcharts.getOptions().colors[idx % Highcharts.getOptions().colors.length],
+                    data: series[p],
                     fillOpacity: 0.5
                 }, false)
         });
         Chart.redraw(); // dibuja todas las series juntas
     }
 
-    //// Ol elements
+    //// MapElements
     map.addLayer(vectorLayer);
     map.addInteraction(modify);
     map.addInteraction(select);
@@ -283,12 +299,10 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
         if (polygonContains(context.borderCoords, [lon, lat])) {
             setSerie(true, lon, lat);
         } else {
-            const {popover} = generatePopup(
-                mapContainer,
+            dispatchAlert(
                 "Seleccione un punto dentro del dominio",
                 1300
             );
-            popover.show();
             setSerie(true, lonSerie, latSerie);
         }
     });
@@ -301,12 +315,10 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
         if (polygonContains(context.borderCoords, [lon, lat])) {
             setSerie(true, lon, lat);
         } else {
-            const {popover} = generatePopup(
-                mapContainer,
+            dispatchAlert(
                 "Seleccione un punto dentro del dominio",
                 1300
             );
-            popover.show();
             setSerie(true, lonSerie, latSerie);
         }
     });
@@ -375,9 +387,9 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
         //// Mostramos el popover
         popover.show();
     }
-    //// ol-fin
+    //// MapElements-End
 
-    return {setSerie};
+    return { setSerie };
 }
 
 export { serieGenerator };

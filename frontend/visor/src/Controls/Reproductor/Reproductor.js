@@ -40,7 +40,8 @@ function reproductorGenerator(context, state) {
 
   function frame_adjust(dt){
     // 23 para dt=15. Ajustar según dt cambie linealmente
-    return Math.min(Math.floor(23 * 15 / dt), 59);
+    const fpsBase = 23;
+    return Math.min(Math.floor(fpsBase * 15 / dt), 59);
   }
 
   // Variables to adjust the frame rate
@@ -292,7 +293,14 @@ function reproductorGenerator(context, state) {
       pauseLoad = false;
       buttonPlay.click();
     }
-  });  
+  });
+
+  // Generamos Pause cuando hay cambio de dominio
+  state.addEventListener('change:domain', () => {
+    if (animationId) {
+      buttonPause.click();
+    }
+  });
 
   return wrapper;
 }

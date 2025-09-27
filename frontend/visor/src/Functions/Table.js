@@ -35,15 +35,18 @@ function tableGenerator(context, state, map) {
     };
     const buttonApplySetDataSources = document.createElement('button');
     buttonApplySetDataSources.textContent = "Aplicar Datos";
+    buttonApplySetDataSources.title = "Actualiza los datos de la tabla para generar un escenario";
     buttonApplySetDataSources.classList.add('btn', 'btn-secondary')
     Object.assign(buttonApplySetDataSources.style, styleButton);
     const buttonLoad = document.createElement('button');
     buttonLoad.textContent = "Cargar Datos**";
+    buttonLoad.title = "Carga datos desde un archivo CSV";
     buttonLoad.id = "load-data";
     buttonLoad.classList.add('btn', 'btn-secondary')
     Object.assign(buttonLoad.style, styleButton);
     const buttonDownload = document.createElement('button');
     buttonDownload.textContent = "Descargar Tabla";
+    buttonDownload.title = "Descarga los datos de la tabla en un archivo CSV";
     buttonDownload.id = "download-csv";
     buttonDownload.classList.add('btn', 'btn-secondary')
     Object.assign(buttonDownload.style, styleButton);
@@ -95,8 +98,9 @@ function tableGenerator(context, state, map) {
         },
         columns: [
             { title: "Id", field: "id_inner", headerSort: false, hozAlign: "center", width: 50, resizable: false },
-            { title: "Fuente", field: "emisid", width: 110 },
-            { title: "Faena", field: "project", width: 80 },
+            { title: "Faena",  field: "project", width: 80},
+            { title: "Fuente", field: "emisid",  width: 70, headerSort: false},
+            { title: "Tipo",   field: "type",    width: 70, headerSort: false},
             { title: "Abatimiento (%)", field: "abatimiento", sorter: "number", hozAlign: "left", editor: "input", editor: true, validator: ["min:0", "max:100", "numeric"] },
             { title: "Emisión (kg/día)", field: "emision", sorter: "number", hozAlign: "left", editor: "input", editor: true, validator: ["min:0", "max:10000"] },
         ],
@@ -114,7 +118,7 @@ function tableGenerator(context, state, map) {
         let geojson = state.currentData.geoJsonSources;
         let abVector = state.currentData.abVector;
         let emVector = state.currentData.emVector;
-        geojson.features.forEach((feature) => {
+        geojson.features.forEach((feature, idx) => {
             const properties = feature.properties;
             const geometry = feature.geometry;
             const type_geom = geometry.type;
@@ -136,9 +140,10 @@ function tableGenerator(context, state, map) {
             vectorSource.addFeature(olFeature);
 
             tableData.push({
-                id_inner: properties.id_inner,
+                id_inner: idx,
                 project: formaterText(properties.project),
                 emisid: formaterText(properties.emisid),
+                type: formaterText(properties.emission),
                 abatimiento: abVector[properties.id_inner] || 0,
                 emision: emVector[properties.id_inner] || 0,
                 type_geom: type_geom,

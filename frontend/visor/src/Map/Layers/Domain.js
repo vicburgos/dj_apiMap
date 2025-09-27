@@ -19,9 +19,12 @@ async function domainGenerator(context, state, map) {
     });
 
     async function setBorder(waitOption=false) {
-        // HARD CODE para la variable latlon
-        let varReference = 'mp10_hd_lon'
-        const Data  = await state.loadData(state.domain, state.instance, varReference);
+        let varReference = context.auxiliaryVairbales["domain"] || null;
+        const Data = await state.loadData(state.domain, state.instance, varReference);
+        if (!Data) {
+            console.warn("La carga de datos para el dominio ha fallado");
+            return;
+        }
         const nx = Data.nx;
         const ny = Data.ny;
         const valuesLon = Data.valuesXX;

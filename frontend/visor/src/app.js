@@ -18,12 +18,9 @@ import { Context, State } from './Data/DataManager.js';
 import { mapGenerator } from './Map/BaseMap.js'
 import { tableGenerator } from './Functions/Table.js'
 import { serieGenerator } from './Functions/Serie.js'
-import { reproductorGenerator } from './Controls/Reproductor/Wrapper.js'
+import { reproductorGenerator } from './Controls/Reproductor/Reproductor.js'
 import { selectorGenerator } from './Controls/Selector/Wrapper.js';
 import { Variable4SpecieSelector } from './Controls/Selector/Variable4Specie.js';
-
-import {generatePopup} from './utils/Alert.js';
-
 
 async function main() {
   /// Carga de elementos
@@ -105,7 +102,7 @@ async function main() {
   panelTable.appendChild(wrapperButtons);
 
   // Agregamos Serie
-  const {setSerie} = serieGenerator(context, state, map, mapContainer, panelSerie);
+  const { setSerie } = serieGenerator(context, state, map, mapContainer, panelSerie);
 
   // Agregamos el reproductor
   const reproductorContainer = reproductorGenerator(context, state);
@@ -196,35 +193,17 @@ async function main() {
 
   //// Inicializacion
   map.once('postrender', async () => {
-    if (context.instanceDefaultFail){
-      const {popover} = generatePopup(
-        mapContainer,
-        `
-          ENIAC
-          La carga de datos ha fallado.
-          Es posible que el servidor no se encuentre disponible.
-        `
-      );
-      popover.show();
+    if (state.failMode) {
       return;
     }
-
-    // Seteamos el borde
     await setBorder();
-    // Seteamos variable por defecto
-    if (state.variable) {
-      await state.setCurrentData();
-      setContour();
-      setColorbar();
-      setTableAndMapSources();
-      if (context.pointSerieDefault){
-        const { lon, lat } = context.pointSerieDefault;
-        setSerie(true, lon, lat);
-      }
+    state.variable = context.auxiliaryVairbales["default"] || null;
+    if (context.pointSerieDefault) {
+      const { lon, lat } = context.pointSerieDefault;
+      setSerie(true, lon, lat)
     }
     // Seteamos switches auxiliares
     switchLabelsHtml.querySelector('input').click();
-    // switchWindHtml.querySelector('input').click();
   });
 }
 

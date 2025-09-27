@@ -1,29 +1,19 @@
-const dictVarNames = {
-    'HEIGHT': 'Altura',
-    'TEMP': 'Temperatura',
-    'HYSP': 'MP10',
-}
-
 function variableSelector(context, state) {
-    const icon = document.createElement('i');
-    icon.classList.add('bi', 'bi-cloud-haze2');
-    Object.assign(icon.style, {
-        marginLeft: '5px',
-    });
-    
     const defaultPlaceholder = '-- Variable';
-
     const select = document.createElement('select');
     select.id = 'variable-selector';
     select.title = 'Selecciona una variable';
     Object.assign(select.style, {
-        width: '90px',
         userSelect: 'none',
+        width: '100px',
+        border: '0px',
+        backgroundColor: 'transparent',
     });
+
     select.addEventListener('change', (event) => {
-        const optionChoice = event.target.value;
-        if(optionChoice !== defaultPlaceholder) {
-            state.variable = optionChoice;
+        const selectedVariable = event.target.value;
+        if(selectedVariable !== defaultPlaceholder) {
+            state.variable = selectedVariable;
         } else {
             state.variable = null;
         }
@@ -41,10 +31,15 @@ function variableSelector(context, state) {
     Object.assign(wrapper.style, {
         display: 'flex',
         flexDirection: 'row',
-        gap: '10px',
         alignItems: 'center',
+        justifyContent: 'center',
         userSelect: 'none',
+        gap: '5px',
+        fontSize: '13px',
+        height: '25px',
     });
+    const icon = document.createElement('i');
+    icon.classList.add('bi', 'bi-cloud-haze2');
     wrapper.appendChild(icon);
     wrapper.appendChild(select);
 
@@ -62,7 +57,7 @@ function variableSelector(context, state) {
         variables.forEach(variable => {
             const option = document.createElement('option');
             option.value = variable;
-            option.textContent = dictVarNames[variable] || variable;
+            option.textContent = variable;
             select.appendChild(option);
         });
         if (!variables.includes(currentSelectedVariable) ) {
@@ -76,11 +71,7 @@ function variableSelector(context, state) {
     state.addEventListener('options:variables', async () => {
         updateVariableOptions();
     });
-    updateVariableOptions();
-    state.variable
-        ?select.value = state.variable
-        : null;
-        
+    updateVariableOptions();       
     return wrapper;
 }
 export { variableSelector };

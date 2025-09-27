@@ -7,17 +7,33 @@ import geojson
 from geojson import Point, Feature, FeatureCollection
 from django.conf import settings
 from dj_apiMap.settings import BASE_DIR
+import jwt
+
+secret_pass_jwt  = "mysecretpass"
 
 #### Set some global variables
 dir_root          = os.path.join(settings.BASE_DIR, 'dataApp')
+
 hoursRun          = 24*7              # Total hours of the simulation
-startHour         = 4                 # Start hour of the simulation
+startHour         = 0                 # Start hour of the simulation
 endHour           = hoursRun - 1      # End hour of the simulation
 optionLocalTime   = True              # Use local time or not
+variableSelector  = True
 ref_dt            = 15                # Time step of the data (minutes)
-domains           = ['antucoya', 'codelconorte', 'pelambres']  # List of domains available. Usually only one domain is used.
-filter_variables  = 'species'         # Filter variables that end with this string
+domains           = [                 # List of domains available. Usually only one domain is used.
+    'antucoya', 
+    'codelconorte', 
+
+    'pelambres',
+]
+auxiliaryVairbales = {
+    "default": "mp10_hd_species",
+    "domain" : "mp10_hd_lon",
+    "windx"  : "mp10_ld_u10",
+    "windy"  : "mp10_ld_v10",
+}
 pointSerieDefault = {'lon':-69.666, 'lat':-22.350}
+# pointSerieDefault = {'lon':-68.767, 'lat':-22.344}
 places = {
     'points': {
         'Minera Antucoya': (-69.865, -22.627),
@@ -57,15 +73,18 @@ class ContextAPI(View):
         /api/context/
         """
         dict_context = {
-            "hoursRun" : hoursRun,
-            "startHour": startHour,
-            "endHour"  : endHour,
-            "optionLocalTime": optionLocalTime,
-            "ref_dt"  : ref_dt,
-            "domains" : domains,
-            "places"  : geoCollection,
-            'pointSerieDefault' : pointSerieDefault,
+            "hoursRun"           : hoursRun,
+            "startHour"          : startHour,
+            "endHour"            : endHour,
+            "optionLocalTime"    : optionLocalTime,
+            "ref_dt"             : ref_dt,
+            "domains"            : domains,
+            "variableSelector"   : variableSelector,
+            "auxiliaryVairbales" : auxiliaryVairbales,
+            'pointSerieDefault'  : pointSerieDefault,
+            "places"             : geoCollection,
         }
+        # return JsonResponse({"error": "No autorizado"}, status=401)
         return JsonResponse(dict_context, safe=False)
     
 from django.views import View
@@ -87,6 +106,7 @@ class InstancesAPI(View):
             "instances": instances_info(domain),
         }
         return JsonResponse(dict_variable, safe=False)
+            
 
 from django.views import View
 from django.http import JsonResponse
@@ -180,6 +200,7 @@ class DataAPI(View):
             npz      = np.load(npz_file, allow_pickle=True)
             values   = npz["values"]
             nt       = int(npz["nt"])
+            nv       = int(npz["nv"])
             nz       = int(npz["nz"])
             ny       = int(npz["ny"])
             nx       = int(npz["nx"])
@@ -193,6 +214,7 @@ class DataAPI(View):
         header = {
             "variable": variable,
             "nt": nt,
+            "nv": nv,
             "nz": nz,
             "ny": ny,
             "nx": nx,
@@ -238,6 +260,7 @@ class DataJsonAPI(View):
             npz      = np.load(npz_file, allow_pickle=True)
             values   = npz["values"]
             nt       = int(npz["nt"])
+            nv       = int(npz["nv"])
             nz       = int(npz["nz"])
             ny       = int(npz["ny"])
             nx       = int(npz["nx"])
@@ -250,6 +273,7 @@ class DataJsonAPI(View):
         header = {
             "variable": variable,
             "nt": nt,
+            "nv": nv,
             "nz": nz,
             "ny": ny,
             "nx": nx,

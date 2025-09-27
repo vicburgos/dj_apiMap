@@ -1,7 +1,7 @@
 import "./stylePopup.css";
 import { Popover } from 'bootstrap';
 
-function generatePopup(root, text, timeout=null) {
+function generatePopup(root, text, timeout = null) {
     // Popup
     const popupContainer = document.createElement('div');
     popupContainer.classList.add('alert-popup');
@@ -14,6 +14,7 @@ function generatePopup(root, text, timeout=null) {
         transform: 'translate(-50%, 0%)',
         width: "300px",
         userSelect: 'none',
+        zIndex: '1000',
     });
     root.appendChild(popupContainer);
     const contentPopup = document.createElement('div');
@@ -64,16 +65,30 @@ function generatePopup(root, text, timeout=null) {
         p.textContent = line;
         textNode.appendChild(p);
     });
-    
-    timeout? null : contentPopup.appendChild(closePopupButton);
+
+    timeout ? null : contentPopup.appendChild(closePopupButton);
     contentPopup.appendChild(textNode);
     popupContainer.appendChild(contentPopup);
 
-    timeout? setTimeout(() => {
+    timeout ? setTimeout(() => {
         closePopupButton.click();
     }, timeout) : null;
 
     return { popupContainer, popover }
 }
 
-export { generatePopup }
+function dispatchAlert(message, timeout = null) {
+    const elementHtml = document.getElementById('vue-panel-map');
+    if (!elementHtml){
+        console.error("No se encuentra el elemento para mostrar la alerta");
+        return;
+    }
+    const { popover } = generatePopup(
+        elementHtml,
+        message,
+        timeout
+    );
+    popover.show();
+}
+
+export { generatePopup, dispatchAlert}

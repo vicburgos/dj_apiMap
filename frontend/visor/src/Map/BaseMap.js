@@ -1,5 +1,7 @@
 import 'ol/ol.css';
 import Map from 'ol/Map';
+import View from 'ol/View';
+import {fromLonLat} from 'ol/proj';
 import { Attribution, Control } from 'ol/control';
 import { MouseWheelZoom, DragPan } from 'ol/interaction';
 import { platformModifierKeyOnly } from 'ol/events/condition';
@@ -26,6 +28,10 @@ async function mapGenerator(context, state) {
         target: mapContainer,
         layers: layersBackground.concat([background.topo]),
         controls: [],
+        // view: new View({
+        //     center: fromLonLat([-70.5, -23]),
+        //     zoom:  7,
+        // }),
     });
 
     // Remove Atributtions

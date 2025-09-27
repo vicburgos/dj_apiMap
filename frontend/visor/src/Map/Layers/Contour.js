@@ -137,16 +137,12 @@ function contourGenerator(context, state, map) {
             return;
         }
         const data = state.currentData;
-        const ny = data.ny;
-        const nx = data.nx;
-        const nz = data.nz;
-        const emVector = data.emVector;
-        const abVector = data.abVector;
-        let values = data.valuesApi(0, 0).map(() => 0); // format (ny, nx)
-        for (let z = 0; z < nz; z++) {
-            const valuesZ = data.valuesApi(state.frame, z);
+        const { nx, ny, nv, nt, valuesApi, emVector, abVector } = data;
+        let values = valuesApi(0, 0, 0).map(() => 0); // values to format (ny, nx)
+        for (let v = 0; v < nv; v++) {
+            const valuesZ = valuesApi(state.frame, v, state.level);
             for (let i = 0; i < ny * nx; i++) {
-                values[i] += valuesZ[i] * emVector[z] * (1-abVector[z]/100);
+                values[i] += valuesZ[i] * emVector[v] * (1-abVector[v]/100);
             }
         }
 

@@ -37,15 +37,11 @@ function windGenerator(context, state) {
             features.clear();
             return;
         }
-        // HARD CODE variables para la grilla de viento
-        let varReference = 'mp10_ld_v10';
+        let varReference = context.auxiliaryVairbales["windy"] || null;
         const Data = await state.loadData(state.domain, state.instance, varReference);
-
         if (!Data) {
-            console.log('No available data for wind');
             return;
         }
-
         const LON = Data.valuesXX
         const LAT = Data.valuesYY
         features.clear();
@@ -63,15 +59,14 @@ function windGenerator(context, state) {
             vectorSource.clear();
             return;
         }
-        // HARD CODE variables para la grilla de viento
-        let windx = 'mp10_ld_u10';
-        let windy = 'mp10_ld_v10';
+        let windx = context.auxiliaryVairbales["windx"] || null;
+        let windy = context.auxiliaryVairbales["windy"] || null;
         const windxData = await state.loadData(state.domain, state.instance, windx);
         const windyData = await state.loadData(state.domain, state.instance, windy);
 
         if (!windxData || !windyData) {
-            console.log('No available data for wind');
-            return;
+            switchWindHtml.querySelector('input').checked = false;
+            console.warn("La variable de viento no se encuentra disponible");
         }
 
         let maxExpectedSpeed = Math.sqrt(

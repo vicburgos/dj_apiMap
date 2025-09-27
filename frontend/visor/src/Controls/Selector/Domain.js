@@ -1,36 +1,25 @@
 function domainSelector(context, state) {
-
-    const domains = context.domains || {};
-
-    const icon = document.createElement('i');
-    icon.classList.add('bi', 'bi-globe-americas');
-    Object.assign(icon.style, {
-        marginLeft: '5px',
-    });
-
+    const domains = context.domains;
     const select = document.createElement('select');
-    select.id = 'variable-selector';
-    select.title = 'Selecciona una variable';
+    select.id = 'domain-selector';
+    select.title = 'Selecciona un dominio';
     Object.assign(select.style, {
-        width: '150px',
         userSelect: 'none',
+        width: '100px',
+        border: '0px',
+        backgroundColor: 'transparent',
     });
     // Agregamos opciones:
-    Object.entries(domains).forEach(([key, value]) => {
+    domains.forEach((value) => {
         const option = document.createElement('option');
-        option.value = key;
-        option.textContent = `(${key.toLocaleUpperCase()}) ${value.name.toUpperCase()}`;
+        option.value = value;
+        option.textContent = `${value.toUpperCase()}`;
         select.appendChild(option);
     });
     // Agregames change
     select.addEventListener('change', (event) => {
         const selectedDomain = event.target.value;
-        // Actualizar el state
-        if (state) {
-            state.domain = selectedDomain;
-        } else {
-            console.warn('state no está definido.');
-        }
+        state.domain = selectedDomain;
     });
     // Select default variable
     select.value = state.domain
@@ -39,10 +28,15 @@ function domainSelector(context, state) {
     Object.assign(wrapper.style, {
         display: 'flex',
         flexDirection: 'row',
-        gap: '10px',
         alignItems: 'center',
+        justifyContent: 'center',
         userSelect: 'none',
+        gap: '5px',
+        fontSize: '13px',
+        height: '25px',
     });
+    const icon = document.createElement('i');
+    icon.classList.add('bi', 'bi-globe-americas');
     wrapper.appendChild(icon);
     wrapper.appendChild(select);
 

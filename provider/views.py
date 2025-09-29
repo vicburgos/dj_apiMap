@@ -2,14 +2,13 @@
 ## API'S
 #################################################################################################
 import os
+from glob import glob
 import json
 import geojson
 from geojson import Point, Feature, FeatureCollection
 from django.conf import settings
 from dj_apiMap.settings import BASE_DIR
 import jwt
-
-secret_pass_jwt  = "mysecretpass"
 
 #### Set some global variables
 dir_root          = os.path.join(settings.BASE_DIR, 'dataApp')
@@ -23,12 +22,10 @@ ref_dt            = 15                # Time step of the data (minutes)
 domains           = [                 # List of domains available. Usually only one domain is used.
     'antucoya', 
     'codelconorte', 
-
     'pelambres',
 ]
 auxiliaryVairbales = {
     "default": "mp10_hd_species",
-    "domain" : "mp10_hd_lon",
     "windx"  : "mp10_ld_u10",
     "windy"  : "mp10_ld_v10",
 }
@@ -86,6 +83,8 @@ class ContextAPI(View):
         }
         # return JsonResponse({"error": "No autorizado"}, status=401)
         return JsonResponse(dict_context, safe=False)
+    
+
     
 from django.views import View
 from django.http import JsonResponse
@@ -146,7 +145,7 @@ class PlacesAPI(View):
         with open(places_geojson_path, 'r') as f:
             places_geojson = geojson.load(f)
         return JsonResponse(places_geojson, safe=False)
-
+    
 class SourcesAPI(View):
     def get(self, request, *args, **kwargs):
         """

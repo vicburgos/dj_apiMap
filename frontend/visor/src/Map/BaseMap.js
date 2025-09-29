@@ -63,20 +63,27 @@ async function mapGenerator(context, state) {
     // }));
 
     // Agregamos domainLayer
-    const [domainLayer, setBorder] = await domainGenerator(context, state, map);
-    map.addLayer(domainLayer);
-    domainLayer.setZIndex(1);
+    const {setViewDomain} = await domainGenerator(context, state, map);
     
     // Agregamos contourLayer and colormap
-    const [contourLayer, colorMapContainer, setContour, setColorbar] = contourGenerator(context, state, map);
+    const {
+        contourLayer, 
+        borderLayer, 
+        colorMapContainer, 
+        setContour,
+        setBorder,
+        setColorbar 
+    } = contourGenerator(context, state, map);
     Object.assign(colorMapContainer.style, {
         position: 'absolute',
         bottom: '40px',
         right: '10px',
     });
     mapContainer.appendChild(colorMapContainer);
+    map.addLayer(borderLayer);
+    borderLayer.setZIndex(1);
     map.addLayer(contourLayer);
-    contourLayer.setZIndex(2);   
+    contourLayer.setZIndex(2);
 
     // Agregamos Switch-Viento
     const [switchWindHtml, vectorLayerWind, setWind, setGrid] = windGenerator(context, state);
@@ -174,10 +181,11 @@ async function mapGenerator(context, state) {
         map, 
         wrapperSelectLayer,
         setContour,
+        setBorder,
         setColorbar,
         setWind,
         setGrid,
-        setBorder,
+        setViewDomain,
         switchLabelsHtml,
         switchWindHtml,
     }

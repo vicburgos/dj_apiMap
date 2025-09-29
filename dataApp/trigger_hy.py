@@ -118,9 +118,10 @@ def save_data(dir_base, variable, values, attrs, compress='float32'):
         np.savez(os.path.join(output_path, "data.npz"),
             values   = values,
             nt       = values.shape[0],
-            nz       = values.shape[1],
-            ny       = values.shape[2],
-            nx       = values.shape[3],
+            nv       = values.shape[1],
+            nz       = values.shape[2],
+            ny       = values.shape[3],
+            nx       = values.shape[4],
             attrs    = attrs,
             compress = compress,
         )
@@ -213,23 +214,23 @@ for instance in instances:
 
                     if var == 'lon':
                         values = GRID_LON #(ny,nx)
-                        values = np.expand_dims(np.expand_dims(values, axis=0), axis=0) #(nt,nz,ny,nx)
+                        values = np.expand_dims(np.expand_dims(np.expand_dims(values, axis=0), axis=0), axis=0) #(nt,nv,nz,ny,nx)
                         attrs_render['human_name'] = 'Longitud'
                         attrs_render['unit']       = 'deg'
                         attrs_render['vmin']       = float(values.min())
                         attrs_render['vmax']       = float(values.max())
-                        attrs_render['thresholds'] = np.linspace(attrs_render['vmin'], attrs_render['vmax'], 16).tolist()
+                        attrs_render['thresholds'] = np.round(np.linspace(attrs_render['vmin'], attrs_render['vmax'], 8),2).tolist()
                         save_data(dir_visor, coordx, values, attrs=attrs_render)
 
                     elif var == 'lat':
                         values = GRID_LAT #(ny,nx)
-                        values = np.expand_dims(np.expand_dims(values, axis=0), axis=0) #(nt,nz,ny,nx)
+                        values = np.expand_dims(np.expand_dims(np.expand_dims(values, axis=0), axis=0), axis=0) #(nt,nv,nz,ny,nx)
                         var_name = '_'.join([a_species, type_grid, var])
                         attrs_render['human_name'] = 'Latitud'
                         attrs_render['unit']       = 'deg'
                         attrs_render['vmin']       = float(values.min())
                         attrs_render['vmax']       = float(values.max())
-                        attrs_render['thresholds'] = np.linspace(attrs_render['vmin'], attrs_render['vmax'], 16).tolist()
+                        attrs_render['thresholds'] = np.round(np.linspace(attrs_render['vmin'], attrs_render['vmax'], 8),2).tolist()
                         save_data(dir_visor, coordy, values, attrs=attrs_render)
 
                     elif var == 'u10':
@@ -252,6 +253,7 @@ for instance in instances:
 
                         values = gaussian_filter1d(values, sigma=3, axis=0) #(nt,ny,nx)
                         values = np.expand_dims(values, axis=1) # (nt,nz,ny,nx)
+                        values = np.expand_dims(values, axis=1) # (nt,nv,nz,ny,nx)
                         var_name = '_'.join([a_species, type_grid, var])
                         attrs_render['human_name'] = 'u10'
                         attrs_render['unit']       = "m/s"
@@ -280,6 +282,7 @@ for instance in instances:
                             
                         values = gaussian_filter1d(values, sigma=3, axis=0) #(nt,ny,nx)
                         values = np.expand_dims(values, axis=1) # (nt,nz,ny,nx)
+                        values = np.expand_dims(values, axis=1) # (nt,nv,nz,ny,nx)
                         var_name = '_'.join([a_species, type_grid, var])
                         attrs_render['human_name'] = 'v10'
                         attrs_render['unit']       = "m/s"
@@ -289,18 +292,18 @@ for instance in instances:
                         save_data(dir_visor, var_name, values, attrs=attrs_render, compress='float16')
 
                     elif var == 'hysp': 
-
                         values = dspuff['hysp'].values #(nt,ny,nx)
                         values = values*1000*365*0.25* 5000 * 1e4
-                        values = np.expand_dims(values, axis=1) #(nt,nz,ny,nx)
                         scale = structure_template['grids'][type_grid]['scale']
-                        values = zoom(values, (scale['dt'], 1, scale['dy'], scale['dx']), order=1)
+                        values = zoom(values, (scale['dt'], scale['dy'], scale['dx']), order=1)
+                        values = np.expand_dims(values, axis=1) #(nt,nz,ny,nx)
+                        values = np.expand_dims(values, axis=1) #(nt,nv,nz,ny,nx)
                         var_name = '_'.join([a_species, type_grid, var])
                         attrs_render['human_name']   = f"Concentración de {a_species}"
                         attrs_render['unit']         = "µg/m³"
-                        attrs_render['vmin']       = np.percentile(values, 0)
-                        attrs_render['vmax']       = np.percentile(values, 100)
-                        attrs_render['thresholds'] = [0.5, 1, 2, 5, 10, 20, 30, 40, 50, 75, 100, 125, 150, 300, 500, 1000]
+                        attrs_render['vmin']         = float(values.min())
+                        attrs_render['vmax']         = float(values.max())
+                        attrs_render['thresholds']   = [0.5, 1, 2, 5, 10, 20, 30, 40, 50, 75, 100, 125, 150, 300, 500, 1000]
                         save_data(dir_visor, var_name, values, attrs=attrs_render, compress='float16')
 
     ## Marcamos el directorio como listo

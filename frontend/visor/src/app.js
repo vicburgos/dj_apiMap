@@ -40,10 +40,11 @@ async function main() {
     map,
     wrapperSelectLayer,
     setContour,
+    setBorder,
     setColorbar,
     setWind,
     setGrid,
-    setBorder,
+    setViewDomain,
     switchLabelsHtml,
     switchWindHtml,
   } = await mapGenerator(context, state);
@@ -118,12 +119,14 @@ async function main() {
   // The statement with "await" are related to load data from api server
   state.addEventListener('change:domain', async () => {
     await state.loadInstances();
+    await state.loadVariables();
     setColorbar(false);
+    setBorder(false);
     setContour(false);
     setGrid(false);
     setWind(false);
     setSerie(false, null, null);
-    await setBorder({ waitOption: true });
+    await setViewDomain({ waitOption: true });
     state.dispatchEvent(new CustomEvent('change:instance'));
   });
   state.addEventListener('change:instance', async () => {
@@ -137,6 +140,7 @@ async function main() {
     await state.setCurrentData();
     if (state.variable && state.currentData) {
       setContour();
+      setBorder();
       setColorbar();
       setSerie();
       switchWindHtml.querySelector('input').checked
@@ -145,6 +149,7 @@ async function main() {
       setTableAndMapSources();
     } else {
       setColorbar(false);
+      setBorder(false);
       setContour(false);
       setTableAndMapSources(false);
       setSerie(false);
@@ -196,8 +201,9 @@ async function main() {
     if (state.failMode) {
       return;
     }
-    await setBorder();
+    await setViewDomain();
     state.variable = context.auxiliaryVairbales["default"] || null;
+    await state.setCurrentData();
     if (context.pointSerieDefault) {
       const { lon, lat } = context.pointSerieDefault;
       setSerie(true, lon, lat)

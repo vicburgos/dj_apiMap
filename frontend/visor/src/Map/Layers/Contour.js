@@ -9,7 +9,7 @@ import { blur2 } from 'd3';
 import { scaleLinear, axisBottom, format, scaleBand, axisLeft, axisRight } from 'd3';
 import { contours } from 'd3-contour';
 import { colorsMap } from '../../Data/ColorsMap.js';
-import katex from 'katex';
+import { Polygon } from 'ol/geom.js';
 
 function contourGenerator(context, state, map) {
     // COLORBAR
@@ -23,7 +23,7 @@ function contourGenerator(context, state, map) {
         userSelect: 'none',
     });
     let currentOptionColor = state.colorMapOption || 1;
-    function setColorbar(active=true, interpolate=colorsMap[currentOptionColor].interpolate) {
+    function setColorbar(active = true, interpolate = colorsMap[currentOptionColor].interpolate) {
         if (!active) {
             colorMapContainer.innerHTML = '';
             return;
@@ -124,6 +124,35 @@ function contourGenerator(context, state, map) {
             .style("opacity", 1);
     }
 
+    const borderSource = new VectorSource()
+    const borderLayer = new VectorLayer({
+        source: borderSource,
+        updateWhileInteracting: true,
+        updateWhileAnimating: true,
+    });
+    function setBorder(active=true) {
+        if (!active) {
+            borderSource.clear();
+            return;
+        }
+        let borderCoords = state.currentData?.borderCoords || [];
+        let lineCoords = borderCoords.map(([lon, lat]) => fromLonLat([lon, lat]));
+        let lineFeature = new Feature({ geometry: new Polygon([lineCoords]) });
+        //Generar un poligono con fill gris
+        lineFeature.setStyle(new Style({
+            stroke: new Stroke({
+                color: 'rgba(100, 100, 100, 1)',
+                width: 3,
+            }),
+            fill: new Fill({
+                color: 'rgba(0, 0, 0, 0.1)',
+            }),
+        }));
+
+        borderSource.clear();
+        borderSource.addFeature(lineFeature);
+    }
+
     // CONTOUR
     const contourSource = new VectorSource()
     const contourLayer = new VectorLayer({
@@ -131,7 +160,7 @@ function contourGenerator(context, state, map) {
         updateWhileInteracting: true,
         updateWhileAnimating: true,
     });
-    function setContour(active=true, interpolate = colorsMap[currentOptionColor].interpolate) {
+    function setContour(active = true, interpolate = colorsMap[currentOptionColor].interpolate) {
         if (!active) {
             contourSource.clear();
             return;
@@ -142,7 +171,7 @@ function contourGenerator(context, state, map) {
         for (let v = 0; v < nv; v++) {
             const valuesZ = valuesApi(state.frame, v, state.level);
             for (let i = 0; i < ny * nx; i++) {
-                values[i] += valuesZ[i] * emVector[v] * (1-abVector[v]/100);
+                values[i] += valuesZ[i] * emVector[v] * (1 - abVector[v] / 100);
             }
         }
 
@@ -195,7 +224,7 @@ function contourGenerator(context, state, map) {
         setContour();
     });
 
-    return [contourLayer, colorMapContainer, setContour, setColorbar];
+    return {contourLayer, borderLayer, colorMapContainer, setContour, setBorder, setColorbar};
 }
 export { contourGenerator };
 

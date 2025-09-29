@@ -18,8 +18,12 @@ async function domainGenerator(context, state, map) {
         source: vectorSource,
     });
 
-    async function setBorder(waitOption=false) {
-        let varReference = context.auxiliaryVairbales["domain"] || null;
+    async function setViewDomain(waitOption=false) {
+        // TODO: Hard Code
+        const codeSubStringName = "lon"; // Solo como referencia para view
+        let varReference = state.variables.find(
+            v => v.includes(codeSubStringName)
+        );
         const Data = await state.loadData(state.domain, state.instance, varReference);
         if (!Data) {
             console.warn("La carga de datos para el dominio ha fallado");
@@ -61,22 +65,19 @@ async function domainGenerator(context, state, map) {
             ]);
         }
 
-        // Guardamos
-        context.borderCoords = borderCoords;
-
         // Crear el poligono
         let lineCoords = borderCoords.map(([lon, lat]) => fromLonLat([lon, lat]));
         lineFeature.setGeometry(new Polygon([lineCoords]));
 
         //Generar un poligono con fill gris
         lineFeature.setStyle(new Style({
-            stroke: new Stroke({
-                color: 'rgba(100, 100, 100, 1)',
-                width: 3,
-            }),
-            fill: new Fill({
-                color: 'rgba(0, 0, 0, 0.1)',
-            }),
+            // stroke: new Stroke({
+            //     color: 'rgba(100, 100, 100, 1)',
+            //     width: 3,
+            // }),
+            // fill: new Fill({
+            //     color: 'rgba(0, 0, 0, 0.1)',
+            // }),
         }));
 
         vectorSource.clear();
@@ -109,6 +110,6 @@ async function domainGenerator(context, state, map) {
         }
     }
 
-    return [domainLayer, setBorder];
+    return {domainLayer, setViewDomain};
 }
 export { domainGenerator };

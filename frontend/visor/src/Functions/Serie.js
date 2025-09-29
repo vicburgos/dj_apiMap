@@ -206,15 +206,16 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
     let latSerie = null;
     function setSerie(active = true, lonNew = lonSerie, latNew = latSerie) {
 
-        if (lonNew && latNew && !polygonContains(context.borderCoords, [lonNew, latNew])) {
-            dispatchAlert("El punto para la serie temporal no se encuentra en el dominio seleccionado.");
-            return;
-        }
-
         //Limpiamos grafico previo
         while (Chart.series.length > 0) {
             Chart.series[0].remove(false);
         }
+
+        if (lonNew && latNew && !polygonContains(state.currentData.borderCoords, [lonNew, latNew])) {
+            dispatchAlert("El punto para la serie temporal no se encuentra en el dominio seleccionado.");
+            return;
+        }
+
         Chart.update({
             yAxis: updateStartDateAxis(state.instance, context, '').yAxis,
         });
@@ -296,7 +297,7 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
         closePopupButton.click();
         let coordinate = event.coordinate;
         let [lon, lat] = toLonLat(coordinate);
-        if (polygonContains(context.borderCoords, [lon, lat])) {
+        if (polygonContains(state.currentData.borderCoords, [lon, lat])) {
             setSerie(true, lon, lat);
         } else {
             dispatchAlert(
@@ -312,7 +313,7 @@ function serieGenerator(context, state, map, mapContainer, panelSerie) {
         let coordinate = event.features.item(0).getGeometry().getCoordinates();
         let [lon, lat] = toLonLat(coordinate);
         closePopupButton.click();
-        if (polygonContains(context.borderCoords, [lon, lat])) {
+        if (polygonContains(state.currentData.borderCoords, [lon, lat])) {
             setSerie(true, lon, lat);
         } else {
             dispatchAlert(

@@ -97,32 +97,6 @@
         "history_interval": 15,
         "pollution": true
       }
-    ],
-    "pollution": [
-      {
-        "name": "antucoyaCalpuff",
-        "type": "calpuff",
-        "dx": 1000,
-        "index": 9,
-        "history_interval": 15,
-        "from": 3
-      },
-      {
-        "name": "dnCalpuff",
-        "type": "calpuff",
-        "dx": 1000,
-        "index": 10,
-        "history_interval": 15,
-        "from": 5
-      },
-      {
-        "name": "pelambresHysplit",
-        "type": "hysplit",
-        "dx": 1000,
-        "index": 11,
-        "history_interval": 15,
-        "from": 7
-      }
     ]
   },
   "proj": "lambert",

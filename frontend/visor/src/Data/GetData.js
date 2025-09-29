@@ -49,20 +49,20 @@ async function getData(domain, instance, var_name) {
     // Coordenadas
     const apiUrlXX = `/api/data/?domain=${domain}&instance=${instance}&variable=${attrs['coordx']}`;
     const responseXX = await safeFetch(apiUrlXX);
-    const bufferXX   = await responseXX.arrayBuffer();
-    const headersXX  = responseXX.headers.get('X-Header');
+    const bufferXX = await responseXX.arrayBuffer();
+    const headersXX = responseXX.headers.get('X-Header');
     const metadataXX = JSON.parse(headersXX);
-    const valuesToReturnXX =
+    const valuesXX =
         metadataXX.compress == 'uint8' ? new Uint8Array(bufferXX).slice(0, metadataXX.nx * metadataXX.ny) :
             metadataXX.compress == 'float16' ? new Float16Array(bufferXX).slice(0, metadataXX.nx * metadataXX.ny) :
                 new Float32Array(bufferXX).slice(0, metadataXX.nx * metadataXX.ny);
 
     const apiUrlYY = `/api/data/?domain=${domain}&instance=${instance}&variable=${attrs['coordy']}`;
     const responseYY = await safeFetch(apiUrlYY);
-    const bufferYY   = await responseYY.arrayBuffer();
-    const headersYY  = responseYY.headers.get('X-Header');
+    const bufferYY = await responseYY.arrayBuffer();
+    const headersYY = responseYY.headers.get('X-Header');
     const metadataYY = JSON.parse(headersYY);
-    const valuesToReturnYY =
+    const valuesYY =
         metadataYY.compress == 'uint8' ? new Uint8Array(bufferYY).slice(0, metadataYY.nx * metadataYY.ny) :
             metadataYY.compress == 'float16' ? new Float16Array(bufferYY).slice(0, metadataYY.nx * metadataYY.ny) :
                 new Float32Array(bufferYY).slice(0, metadataYY.nx * metadataYY.ny);
@@ -71,12 +71,12 @@ async function getData(domain, instance, var_name) {
     const ZLON = structureArray(
         nx,
         ny,
-        [...valuesToReturnXX]
+        [...valuesXX]
     );
     const ZLAT = structureArray(
         nx,
         ny,
-        [...valuesToReturnYY]
+        [...valuesYY]
     );
 
     const proj_ij_to_lonlat = (x, y) => {
@@ -105,6 +105,37 @@ async function getData(domain, instance, var_name) {
             }
         }
         return [x, y];
+    }
+
+    // Creamos bordes
+    const borderCoords = [];
+    for (let i = 0; i < nx; i++) {   //Inferior
+        let j = 0;
+        borderCoords.push([
+            valuesXX[j * nx + i],
+            valuesYY[j * nx + i],
+        ]);
+    }
+    for (let j = 0; j < ny; j++) {  //Derecho
+        let i = nx - 1;
+        borderCoords.push([
+            valuesXX[j * nx + i],
+            valuesYY[j * nx + i],
+        ]);
+    }
+    for (let i = 0; i < nx; i++) {  //Superior
+        let j = ny - 1;
+        borderCoords.push([
+            valuesXX[j * nx + nx - 1 - i],
+            valuesYY[j * nx + nx - 1 - i],
+        ]);
+    }
+    for (let j = 0; j < ny; j++) {  //Izquierdo
+        let i = 0;
+        borderCoords.push([
+            valuesXX[(ny - 1 - j) * nx + i],
+            valuesYY[(ny - 1 - j) * nx + i],
+        ]);
     }
 
     // Función para obtener un slice 2D de los datos (t, v, z) -> (ny, nx)
@@ -156,10 +187,11 @@ async function getData(domain, instance, var_name) {
         attrs: attrs,
         values: valuesToReturn,
         valuesApi: valuesApi,
-        valuesXX: valuesToReturnXX,
-        valuesYY: valuesToReturnYY,
+        valuesXX: valuesXX,
+        valuesYY: valuesYY,
         proj_ij_to_lonlat: proj_ij_to_lonlat,
         proj_lonlat_to_ij: proj_lonlat_to_ij,
+        borderCoords: borderCoords,
 
         // Variables Espaciales
         abVector: abVector,
@@ -192,6 +224,7 @@ async function getDataPowerV(domain, instance, var_name) {
         valuesYY,
         proj_ij_to_lonlat,
         proj_lonlat_to_ij,
+        borderCoords,
 
         // Variables Espaciales
         abVector,
@@ -222,7 +255,7 @@ async function getDataPowerV(domain, instance, var_name) {
 
         // TODO: Quitar esta linea cuando este el API
         // Emulamos respuesta
-        let emissions = ['descarga', 'combustion']; 
+        let emissions = ['descarga', 'combustion'];
 
         if (emissions.length > 0) {
             emissions.forEach((emission) => {
@@ -236,7 +269,7 @@ async function getDataPowerV(domain, instance, var_name) {
             });
         } else {
             // Si no hay emisiones, agregamos la fuente original simplemente
-            let newFeature = JSON.parse(JSON.stringify(feature)); 
+            let newFeature = JSON.parse(JSON.stringify(feature));
             newFeature.properties.id_inner_new = indexCounter;
             newFeature.properties.emission = "unknown";
             geoJsonSources_new.features.push(newFeature);
@@ -276,7 +309,8 @@ async function getDataPowerV(domain, instance, var_name) {
         valuesYY: valuesYY,
         proj_ij_to_lonlat: proj_ij_to_lonlat,
         proj_lonlat_to_ij: proj_lonlat_to_ij,
-        
+        borderCoords: borderCoords,
+
         // Variables Espaciales
         abVector: abVector_new,
         emVector: emVector_new,

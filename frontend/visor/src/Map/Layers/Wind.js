@@ -32,16 +32,23 @@ function windGenerator(context, state) {
         updateWhileAnimating: true,
     });
 
+    let LoadWind = true;
     async function setGrid(active=true) {
         if (!active) {
             features.clear();
             return;
         }
-        let varReference = context.auxiliaryVairbales["windy"] || null;
+        // TODO: Hard Code
+        const codeSubStringName = "ld_v10"; // Como referencia
+        let varReference = state.variables.find(
+            v => v.includes(codeSubStringName)
+        );
         const Data = await state.loadData(state.domain, state.instance, varReference);
         if (!Data) {
+            LoadWind = false;
             return;
         }
+        LoadWind = true;
         const LON = Data.valuesXX
         const LAT = Data.valuesYY
         features.clear();
@@ -55,12 +62,19 @@ function windGenerator(context, state) {
 
     let colorWind = 'rgba(255, 255, 255, 1)';
     async function setWind(active=true) {
-        if (!active) {
+        if (!active || !LoadWind) {
             vectorSource.clear();
             return;
         }
-        let windx = context.auxiliaryVairbales["windx"] || null;
-        let windy = context.auxiliaryVairbales["windy"] || null;
+        // TODO: Hard Code
+        const varReference_v10 = "ld_v10"; 
+        const varReference_u10 = "ld_u10";
+        let windx = state.variables.find(
+            v => v.includes(varReference_v10)
+        );
+        let windy = state.variables.find(
+            v => v.includes(varReference_u10)
+        );
         const windxData = await state.loadData(state.domain, state.instance, windx);
         const windyData = await state.loadData(state.domain, state.instance, windy);
 
@@ -75,8 +89,8 @@ function windGenerator(context, state) {
         );
         maxExpectedSpeed = 10;
 
-        const U = windxData.valuesApi(state.frame, 0);
-        const V = windyData.valuesApi(state.frame, 0);
+        const U = windxData.valuesApi(state.frame, 0, state.level);
+        const V = windyData.valuesApi(state.frame, 0, state.level);
 
         vectorSource.clear();
         U.map((_, index) => {
